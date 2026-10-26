@@ -53,3 +53,9 @@ def test_session_timeout():
         tok = A["Authorization"].split()[1]
         TOKENS[tok]["last"] = time.time() - m.SESSION_TIMEOUT - 5
         assert c.get("/api/rules", headers=A).status_code == 401
+
+
+def test_ui_served():
+    with TestClient(app) as c:
+        r = c.get("/")
+        assert r.status_code == 200 and "Student Attendance" in r.text

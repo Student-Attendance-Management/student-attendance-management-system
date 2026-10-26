@@ -432,3 +432,14 @@ def set_rules(b: Rules, user=Depends(auth("Admin"))):
 @app.get("/api/audit")
 def get_audit(user=Depends(auth("Admin"))):
     con = db(); r = [dict(x) for x in con.execute("SELECT * FROM audit ORDER BY id DESC LIMIT 200")]; con.close(); return r
+
+
+# ---------- Frontend ----------
+from fastapi.responses import FileResponse  # noqa: E402
+
+_FRONT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "index.html")
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    return FileResponse(_FRONT)
