@@ -24,7 +24,8 @@ table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:7px;bord
 let T=sessionStorage.getItem('t')||'',ROLE=sessionStorage.getItem('r')||'';
 const $=s=>document.querySelector(s),app=$('#app');
 function toast(t,ok=true){const m=$('#msg');m.textContent=t;m.style.background=ok?'#2f9e44':'#e03131';m.style.display='block';setTimeout(()=>m.style.display='none',3000)}
-async function api(p,m='GET',b){const r=await fetch('/api'+p,{method:m,headers:{'Content-Type':'application/json',Authorization:'Bearer '+T},body:b?JSON.stringify(b):undefined});
+const API=(location.port=='8000'||location.protocol=='https:')?'':'http://127.0.0.1:8000';
+async function api(p,m='GET',b){const r=await fetch(API+'/api'+p,{method:m,headers:{'Content-Type':'application/json',Authorization:'Bearer '+T},body:b?JSON.stringify(b):undefined});
  if(r.status==401&&T){logout(true);throw 0}
  if(!r.ok){let d='';try{d=(await r.json()).detail}catch(e){}toast(typeof d=='string'?d:'Error '+r.status,false);throw 0}
  return r.headers.get('content-type')?.includes('json')?r.json():r}

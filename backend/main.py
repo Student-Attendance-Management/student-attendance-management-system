@@ -11,6 +11,8 @@ DB_PATH = os.environ.get("SAMS_DB", "sams.db")
 SESSION_TIMEOUT = int(os.environ.get("SAMS_SESSION_TIMEOUT", "1800"))  # SAM-SR-006
 
 app = FastAPI(title="Student Attendance Management System")
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 TOKENS: dict = {}  # token -> {user, last}
 
 SCHEMA = """
