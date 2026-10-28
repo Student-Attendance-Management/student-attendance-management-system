@@ -32,7 +32,7 @@ python -m pytest -q
 | SAM-SR-006 | session timeout |
 
 ## Not yet / deviations
-HTTPS is deployment config (SAM-SR-001). Web UI is minimal (Swagger). Load/availability NFRs are test-verified, not coded.
+Load/availability NFRs are test-verified, not coded.
 
 ## Code layout (SAM-NF-006)
 ```
@@ -45,3 +45,11 @@ backend/
 frontend/index.html   single-page UI
 seed.py               demo data loader
 ```
+
+## HTTPS / TLS (SAM-SR-001)
+```bash
+python run_https.py        # https://127.0.0.1:8443
+```
+Generates a self-signed dev certificate on first run (`certs/`, git-ignored). The browser shows a warning for
+self-signed certs: Advanced -> Proceed. In production, terminate TLS at a reverse proxy (nginx/Caddy) with a real
+certificate and forward to `uvicorn backend.main:app`.
