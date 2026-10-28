@@ -16,7 +16,7 @@ def login(c, u, p):
 def test_full_flow():
     with TestClient(app) as c:
         os.environ["SAMS_SESSION_TIMEOUT"] = "1000"
-        import backend.main as m; m.SESSION_TIMEOUT = 1000
+        import backend.security as m; m.SESSION_TIMEOUT = 1000
         assert login(c, "admin", "wrong")[0].status_code == 401
         _, A = login(c, "admin", "admin123")
         cl = c.post("/api/classes", json={"name": "CSE-A", "term": "S5"}, headers=A).json()["id"]
@@ -48,7 +48,7 @@ def test_full_flow():
 
 def test_session_timeout():
     with TestClient(app) as c:
-        import backend.main as m
+        import backend.security as m
         _, A = login(c, "admin", "admin123")
         tok = A["Authorization"].split()[1]
         TOKENS[tok]["last"] = time.time() - m.SESSION_TIMEOUT - 5

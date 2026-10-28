@@ -33,3 +33,15 @@ python -m pytest -q
 
 ## Not yet / deviations
 HTTPS is deployment config (SAM-SR-001). Web UI is minimal (Swagger). Load/availability NFRs are test-verified, not coded.
+
+## Code layout (SAM-NF-006)
+```
+backend/
+  main.py          app setup, CORS, router wiring, serves the UI
+  config.py        environment settings
+  security.py      password hashing, sessions, role checks
+  database.py      schema, connections, audit log, safe inserts
+  routers/         auth, master_data, attendance, reports, admin
+frontend/index.html   single-page UI
+seed.py               demo data loader
+```
