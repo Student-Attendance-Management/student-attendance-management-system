@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SAMS</title>
 <style>
-:root{--bg:#f5f6fa;--card:#fff;--ink:#1d2433;--mut:#6b7385;--pri:#3b5bdb;--bad:#e03131;--ok:#2f9e44;--line:#e2e5ee}
+:root{color-scheme:light dark;--bg:#f5f6fa;--card:#fff;--ink:#1d2433;--mut:#6b7385;--pri:#3b5bdb;--bad:#e03131;--ok:#2f9e44;--line:#e2e5ee}
 @media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1b2030;--ink:#e8ebf3;--mut:#9aa3b8;--line:#2b3247}}
 *{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:var(--bg);color:var(--ink)}
 header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line)}
@@ -16,6 +16,8 @@ table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:7px;bord
 #msg{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:10px 16px;border-radius:8px;color:#fff;display:none;z-index:9}
 .big{font-size:42px;font-weight:700}.low{color:var(--bad)}.good{color:var(--ok)}.mut{color:var(--mut)}
 .tabs button{background:var(--bg);color:var(--ink);border:1px solid var(--line)}.tabs button.on{background:var(--pri);color:#fff}
+option{background:var(--card);color:var(--ink)}select{min-width:150px}label{display:inline-flex;gap:6px;align-items:center;margin-right:6px}
+.req::after{content:' *';color:var(--bad)}input.err,select.err{border-color:var(--bad);outline:1px solid var(--bad)}
 @media(max-width:600px){input,select{width:100%}}
 </style></head><body>
 <header><b>Student Attendance Management</b><span id="who"></span></header>
@@ -24,13 +26,14 @@ table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:7px;bord
 let T=sessionStorage.getItem('t')||'',ROLE=sessionStorage.getItem('r')||'';
 const $=s=>document.querySelector(s),app=$('#app');
 function toast(t,ok=true){const m=$('#msg');m.textContent=t;m.style.background=ok?'#2f9e44':'#e03131';m.style.display='block';setTimeout(()=>m.style.display='none',3000)}
-async function api(p,m='GET',b){const r=await fetch('/api'+p,{method:m,headers:{'Content-Type':'application/json',Authorization:'Bearer '+T},body:b?JSON.stringify(b):undefined});
+const API=(location.port=='8000'||location.protocol=='https:')?'':'http://127.0.0.1:8000';
+async function api(p,m='GET',b){const r=await fetch(API+'/api'+p,{method:m,headers:{'Content-Type':'application/json',Authorization:'Bearer '+T},body:b?JSON.stringify(b):undefined});
  if(r.status==401&&T){logout(true);throw 0}
  if(!r.ok){let d='';try{d=(await r.json()).detail}catch(e){}toast(typeof d=='string'?d:'Error '+r.status,false);throw 0}
  return r.headers.get('content-type')?.includes('json')?r.json():r}
 function logout(expired){T='';ROLE='';sessionStorage.clear();if(expired)toast('Session expired, log in again',false);show()}
 const tbl=(rows,cols)=>rows.length?`<table><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>${rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??''}</td>`).join('')}</tr>`).join('')}</table>`:'<p class="mut">No data</p>';
-const opts=(a,v,l)=>a.map(x=>`<option value="${x[v]}">${typeof l=='function'?l(x):x[l]}</option>`).join('');
+const opts=(a,v,l)=>!a.length?'<option value="">None yet - add one first</option>':a.map(x=>`<option value="${x[v]}">${typeof l=='function'?l(x):x[l]}</option>`).join('');
 
 function show(){
  $('#who').innerHTML=T?`${ROLE} <button class="sec" onclick="logout()">Logout</button>`:'';
@@ -55,8 +58,8 @@ async function student(){
 async function faculty(){
  const A=await api('/attendance/summary');
  app.innerHTML=`<div class="card"><h2>Take Attendance</h2><div class="row">
- <select id="as">${opts(A,'assignment_id',a=>`${a.subject} · ${a.class}`)}</select>
- <input id="dt" type="date" value="${new Date().toISOString().slice(0,10)}"><input id="pd" type="number" min="1" value="1" style="width:80px">
+ <label class="req">Class/Subject <select id="as">${opts(A,'assignment_id',a=>`${a.subject} · ${a.class}`)}</select></label>
+ <label class="req">Date <input id="dt" type="date" value="${new Date().toISOString().slice(0,10)}"></label><label class="req">Period <input id="pd" type="number" min="1" value="1" style="width:80px"></label>
  <button onclick="startSession()">Start session</button></div><div id="marks"></div></div>
  <div class="card"><h2>Reports</h2>${reportUI(A)}</div>
  <div class="card"><h2>Low attendance</h2><div id="low"></div></div>
@@ -65,6 +68,7 @@ async function faculty(){
  loadLow();
 }
 async function startSession(){
+ if(!$('#as').value||!$('#dt').value||!($('#pd').value>=1))return toast('Select class/subject, date and period (*)',false);
  const s=await api('/attendance/sessions','POST',{assignment_id:+$('#as').value,date:$('#dt').value,period:+$('#pd').value});
  const st=await api(`/attendance/sessions/${s.id}/students`);
  window.SID=s.id;
@@ -78,10 +82,12 @@ async function submitMarks(){
 }
 async function correct(){await api('/attendance/correct','PUT',{sessionId:+$('#cs').value,studentId:+$('#cst').value,status:$('#cv').value});toast('Corrected')}
 async function loadLow(){const l=await api('/attendance/low');$('#low').innerHTML=tbl(l.students,['name','percentage','attended','conducted'])+`<p class="mut">Threshold ${l.threshold}%</p>`}
-function reportUI(A){return `<div class="row"><input id="rf" type="date"><input id="rt" type="date"><input id="rs" placeholder="Student id" style="width:110px">
- <select id="rst"><option value="">Any status</option><option>Present</option><option>Absent</option></select>
- <button onclick="runReport()">Search</button><button class="sec" onclick="runReport(true)">Export CSV</button></div><div id="rep"></div>`}
+function reportUI(){return `<div class="row"><label class="req">From <input id="rf" type="date"></label><label class="req">To <input id="rt" type="date"></label>
+ <input id="rs" placeholder="Student id (optional)" style="width:160px"><select id="rst"><option value="">Any status</option><option>Present</option><option>Absent</option></select>
+ <button onclick="runReport()">Search</button><button class="sec" onclick="runReport(true)">Export CSV</button></div>
+ <p class="mut">* From and To dates are required to export.</p><div id="rep"></div>`}
 async function runReport(csv){
+ if(csv){if(!need(['rf','rt']))return;if($('#rf').value>$('#rt').value){$('#rf').classList.add('err');return toast('From date must be before To date',false)}}
  const q=new URLSearchParams();[['dateFrom','rf'],['dateTo','rt'],['studentId','rs'],['status','rst']].forEach(([k,i])=>$('#'+i).value&&q.set(k,$('#'+i).value));
  if(csv){q.set('export','csv');const r=await api('/attendance/report?'+q);const a=document.createElement('a');a.href=URL.createObjectURL(await r.blob());a.download='attendance_report.csv';a.click();return}
  $('#rep').innerHTML=tbl(await api('/attendance/report?'+q),['student','class','subject','date','period','status']);
@@ -92,15 +98,15 @@ async function admin(){
  const [C,S,F,R]=await Promise.all([api('/classes'),api('/subjects'),api('/faculty'),api('/rules')]);
  const f=(id,ph,t='text')=>`<input id="${id}" type="${t}" placeholder="${ph}">`;
  app.innerHTML=`
- <div class="card"><h2>Classes & Subjects</h2><div class="row">${f('cn','Class name')}${f('ct','Term')}<button onclick="add('/classes',{name:v('cn'),term:v('ct')})">Add class</button></div>
- <div class="row">${f('sc','Subject code')}${f('sn','Subject name')}<button onclick="add('/subjects',{code:v('sc'),name:v('sn')})">Add subject</button></div>
+ <div class="card"><h2>Classes & Subjects</h2><div class="row">${f('cn','Class name *')}${f('ct','Term')}<button onclick="add('/classes',{name:v('cn'),term:v('ct')},['cn'])">Add class</button></div>
+ <div class="row">${f('sc','Subject code *')}${f('sn','Subject name *')}<button onclick="add('/subjects',{code:v('sc'),name:v('sn')},['sc','sn'])">Add subject</button></div>
  <p class="mut">Classes: ${C.map(c=>c.id+'='+c.name).join(', ')||'none'} · Subjects: ${S.map(c=>c.id+'='+c.code).join(', ')||'none'}</p></div>
- <div class="card"><h2>Students</h2><div class="row">${f('stn','Name')}${f('ste','Email')}${f('stp','Password','password')}<select id="stc">${opts(C,'id','name')}</select>
- <button onclick="add('/students',{name:v('stn'),email:v('ste'),password:v('stp'),class_id:+v('stc')})">Add student</button></div><div id="stl"></div></div>
- <div class="card"><h2>Faculty & Assignment</h2><div class="row">${f('fn','Name')}${f('fe','Email')}${f('fp','Password','password')}
- <button onclick="add('/faculty',{name:v('fn'),email:v('fe'),password:v('fp')})">Add faculty</button></div>
+ <div class="card"><h2>Students</h2><div class="row">${f('stn','Name *')}${f('ste','Email *')}${f('stp','Password * (min 6)','password')}<select id="stc">${opts(C,'id','name')}</select>
+ <button onclick="add('/students',{name:v('stn'),email:v('ste'),password:v('stp'),class_id:+v('stc')},['stn','ste','stp','stc'])">Add student</button></div><div id="stl"></div></div>
+ <div class="card"><h2>Faculty & Assignment</h2><div class="row">${f('fn','Name *')}${f('fe','Email *')}${f('fp','Password * (min 6)','password')}
+ <button onclick="add('/faculty',{name:v('fn'),email:v('fe'),password:v('fp')},['fn','fe','fp'])">Add faculty</button></div>
  <div class="row"><select id="af">${opts(F,'id','name')}</select><select id="asu">${opts(S,'id','name')}</select><select id="acl">${opts(C,'id','name')}</select>
- <button onclick="add('/assignments',{faculty_id:+v('af'),subject_id:+v('asu'),class_id:+v('acl')})">Assign</button></div></div>
+ <button onclick="add('/assignments',{faculty_id:+v('af'),subject_id:+v('asu'),class_id:+v('acl')},['af','asu','acl'])">Assign</button></div></div>
  <div class="card"><h2>Rules</h2><div class="row">Low-attendance % <input id="rth" type="number" value="${R.threshold}" style="width:90px"> Correction window (hrs) <input id="rch" type="number" value="${R.correction_hours}" style="width:90px">
  <button onclick="api('/rules','PUT',{threshold:+v('rth'),correction_hours:+v('rch')}).then(()=>toast('Saved'))">Save</button></div></div>
  <div class="card"><h2>Reports</h2>${reportUI()}</div>
@@ -108,7 +114,13 @@ async function admin(){
  loadStudents();
 }
 const v=id=>$('#'+id).value;
-async function add(p,b){try{await api(p,'POST',b);toast('Saved');admin()}catch(e){}}
+document.addEventListener('input',e=>e.target.classList.remove('err'));
+function need(ids){let bad=false;ids.forEach(i=>{const e=$('#'+i);if(!e.value.trim()){e.classList.add('err');bad=true}});if(bad)toast('Fill all required (*) fields',false);return !bad}
+async function add(p,b,req=[]){
+ if(!need(req))return;
+ for(const i of ['ste','fe'])if(req.includes(i)&&!v(i).includes('@')){$('#'+i).classList.add('err');return toast('Enter a valid email',false)}
+ for(const i of ['stp','fp'])if(req.includes(i)&&v(i).length<6){$('#'+i).classList.add('err');return toast('Password must be at least 6 characters',false)}
+ try{await api(p,'POST',b);toast('Saved');admin()}catch(e){}}
 async function loadStudents(){$('#stl').innerHTML=tbl(await api('/students'),['id','name','email','class_id','status'])}
 async function audit(){$('#aud').innerHTML=tbl(await api('/audit'),['ts','user_id','action','entity','entity_id'])}
 show();
