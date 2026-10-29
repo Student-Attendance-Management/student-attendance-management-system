@@ -49,6 +49,14 @@ seed.py               demo data loader
 ## HTTPS / TLS (SAM-SR-001)
 ```bash
 python run_https.py        # https://127.0.0.1:8443
+
+## Final Website Demonstration**
+
+Watch the final demonstration of the Student Attendance Management System (SAMS):
+
+[**Watch the SAMS Website Demo**]: (https://drive.google.com/file/d/171lygfEjzNHmsz6WMzMKmpFHiWSdSEXw/view?usp=sharing)
+
+The video is provided for project review and demonstration purposes.
 ```
 Generates a self-signed dev certificate on first run (`certs/`, git-ignored). The browser shows a warning for
 self-signed certs: Advanced -> Proceed. In production, terminate TLS at a reverse proxy (nginx/Caddy) with a real
