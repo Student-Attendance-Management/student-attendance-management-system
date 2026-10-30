@@ -55,7 +55,7 @@ python run_https.py        # https://127.0.0.1:8443
 
 Watch the final demonstration of the Student Attendance Management System (SAMS):
 
-[**Watch the SAMS Website Demo**]: (https://drive.google.com/file/d/171lygfEjzNHmsz6WMzMKmpFHiWSdSEXw/view?usp=sharing)
+[**Watch the SAMS Website Demo**]: https://drive.google.com/file/d/1z_gJIYXkeqKv1xCNGIyRasTO8kupySK_/view?usp=sharing
 
 The video is provided for project review and demonstration purposes.
 ```
